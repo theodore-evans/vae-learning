@@ -11,16 +11,19 @@ xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
 RUN mkdir -p /root/.local/bin \
 && curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
 
-RUN pyenv install 3.8.3 \
-&& pyenv global 3.8.3
+ENV PYTHONPATH /root/.local/lib:${PYTHONPATH}
+
+RUN pyenv install 3.7.0 \
+&& pyenv global 3.7.0
 
 COPY requirements.txt /tmp/requirements.txt
 
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -r /tmp/requirements.txt
 
 RUN mkdir -p /root/.local/lib
 
 WORKDIR /root
 
 COPY vae.py /root/.local/lib/vae.py
-COPY trainer /root/.local/bin/trainer.py
+COPY trainer.py /root/.local/bin/trainer.py

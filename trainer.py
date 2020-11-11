@@ -1,4 +1,5 @@
-#%%
+
+#!/usr/bin/env python3
 import torch
 import torchvision
 import torch.optim as optim
