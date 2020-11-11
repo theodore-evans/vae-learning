@@ -8,7 +8,7 @@ import matplotlib
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import torchvision.transforms as transforms
-from VAE import VAE
+from vae import VAE
 
 from tqdm import tqdm
 from torchvision import datasets

@@ -25,5 +25,5 @@ RUN mkdir -p /root/.local/lib
 
 WORKDIR /root
 
-COPY vae.py /root/.local/lib/vae.py
-COPY trainer.py /root/.local/bin/trainer.py
+COPY vae.py .
+COPY trainer.py .
