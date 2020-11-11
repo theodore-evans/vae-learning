@@ -2,9 +2,9 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-class VAE(nn.Module):
+class vae(nn.Module):
     def __init__(self, input_dim = 1024, z_dim = 16, hidden_dims=[256, 128], beta = 0.25, reconstruction_loss_f = F.mse_loss):
-        super(VAE, self).__init__()
+        super(vae, self).__init__()
         modules = []
 
         self.reconstruction_loss_f = reconstruction_loss_f
