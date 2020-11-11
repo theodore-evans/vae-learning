@@ -14,7 +14,7 @@ from torchvision import datasets
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 
-epochs = 20
+epochs = 1
 batch_size = 64
 lr = 1e-4
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -95,25 +95,25 @@ for epoch in range(epochs):
     train_loss.append(train_epoch_loss)
     print(f"\nTrain Loss: {train_epoch_loss:.4f}")
 
-#%%
-import matplotlib.pyplot as plt
-%matplotlib inline
+# #%%
+# import matplotlib.pyplot as plt
+# %matplotlib inline
 
-sample, _ = next(iter(val_loader))
-reconstruction, _ , _ = model(sample)
+# sample, _ = next(iter(val_loader))
+# reconstruction, _ , _ = model(sample)
 
-def image_from_tensor(tensor, index):
-    return tensor[index].detach().numpy().reshape(28, -1)
+# def image_from_tensor(tensor, index):
+#     return tensor[index].detach().numpy().reshape(28, -1)
 
-sample_index = 3
-image = image_from_tensor(sample, sample_index)
-reconstructed_image = image_from_tensor(reconstruction, sample_index)
-fig = plt.figure(figsize = (8,8))
-fig.add_subplot(2,1,1)
-plt.imshow(image)
-fig.add_subplot(2,1,2)
-plt.imshow(reconstructed_image)
+# sample_index = 3
+# image = image_from_tensor(sample, sample_index)
+# reconstructed_image = image_from_tensor(reconstruction, sample_index)
+# fig = plt.figure(figsize = (8,8))
+# fig.add_subplot(2,1,1)
+# plt.imshow(image)
+# fig.add_subplot(2,1,2)
+# plt.imshow(reconstructed_image)
 
-plt.show()
+# plt.show()
 
 # %%
