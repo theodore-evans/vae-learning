@@ -2,6 +2,7 @@
 #!/usr/bin/env python3
 
 #%%
+import argparse
 import torch
 import torchvision
 import torch.optim as optim
@@ -17,8 +18,27 @@ from torchvision import datasets
 from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 
-batch_size = 64
-lr = 1e-4
+#%%
+
+import sys
+sys.argv=['']
+del sys
+
+parser = argparse.ArgumentParser(description='Train a VAE')
+parser.add_argument("-r", action='store_true', help="When true, resume training from checkpoint file")
+parser.add_argument("-b", "--batchsize", default="64", help="Batch size")
+parser.add_argument("-l", "--lr", default=1e-4, help="Learning rate")
+parser.add_argument("-e", "--epochs", default="10", help="Number of epochs to train")
+parser.add_argument("-c", "--checkpoint", default="weights.pt", help="Checkpoint file")
+
+options = parser.parse_args()
+
+resume_training = options.r
+batch_size = int(options.batchsize)
+lr = float(options.lr)
+epochs = int(options.epochs)
+checkpoint_filepath = options.checkpoint
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 #%%
@@ -75,9 +95,6 @@ def fit(model, dataloader):
     return train_loss
 
 #%%
-epochs = 10
-checkpoint_filepath = "weights.pt"
-
 def train(model, optimizer, train_loader, epochs, checkpoint_filepath):
     train_loss = []
 
@@ -96,5 +113,15 @@ def train(model, optimizer, train_loader, epochs, checkpoint_filepath):
 
         train_loss.append(train_epoch_loss)
 
+if resume_training:
+    checkpoint = torch.load(checkpoint_filepath)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+
+    print("Loaded from checkpoint file {checkpoint_filepath}, current loss: {loss}")
+
 train(model, optimizer, train_loader, epochs, checkpoint_filepath)
+
 # %%
