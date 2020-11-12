@@ -3,14 +3,13 @@ from torch import nn
 from torch.nn import functional as F
 
 class vae(nn.Module):
-    def __init__(self, input_dim = 1024, z_dim = 16, hidden_dims=[256, 128], beta = 0.25, reconstruction_loss_f = F.mse_loss):
+    def __init__(self, input_dim = 1024, z_dim = 16, hidden_dims=[256, 128], reconstruction_loss_f = F.mse_loss):
         super(vae, self).__init__()
         modules = []
 
         self.reconstruction_loss_f = reconstruction_loss_f
 
         self.data_dim = input_dim
-        self.beta = beta
         self.z_dim = z_dim
 
         for h_dim in hidden_dims:
@@ -56,9 +55,8 @@ class vae(nn.Module):
 
         return x_hat, mu, log_var
 
-    def loss_function(self, x, x_hat, mu, log_var):
+    def loss_function(self, x, x_hat, mu, log_var, beta):
         recons_loss = self.reconstruction_loss_f(x_hat, x)
-
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim=0)
 
-        return recons_loss + self.beta * kld_loss
+        return recons_loss, kld_loss
