@@ -19,11 +19,6 @@ from torch.utils.data import DataLoader
 from torchvision.utils import save_image
 
 #%%
-
-import sys
-sys.argv=['']
-del sys
-
 parser = argparse.ArgumentParser(description='Train a VAE')
 parser.add_argument("-r", action='store_true', help="When true, resume training from checkpoint file")
 parser.add_argument("-b", "--batchsize", default="64", help="Batch size")
@@ -61,7 +56,6 @@ val_data = datasets.MNIST(
 )
 
 # %%
-# training and validation data loaders
 train_loader = DataLoader(
     train_data,
     batch_size=batch_size,
@@ -78,50 +72,61 @@ criterion = nn.BCELoss(reduction='sum')
 model = vae(input_dim = 784, reconstruction_loss_f=criterion).to(device) 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
-def fit(model, dataloader):
+# cyclic annealing taken from https://arxiv.org/abs/1903.10145
+def beta_anneal(iteration, total_iterations, start_beta, end_beta, burn_in, cycles_per_epoch):
+    iterations_per_cycle = round(total_iterations/cycles_per_epoch)
+    burn_in_period = iterations_per_cycle * burn_in
+    beta = min(start_beta + ((iteration % iterations_per_cycle) / burn_in_period) * end_beta, end_beta)
+    return beta
+
+def fit(model, dataloader, epoch, beta_schedule = lambda i, total_i: 0.25):
     model.train()
-    running_loss = 0.0
-    for i, data in tqdm(enumerate(dataloader), total=int(len(train_data)/dataloader.batch_size)):
+    running_loss = (0.0, 0.0)
+    total_iterations = int(len(train_data)/dataloader.batch_size)
+    for i, data in tqdm(enumerate(dataloader), total=total_iterations):
         data, _ = data
         data = data.to(device)
         data = data.view(data.size(0), -1)
         optimizer.zero_grad()
         reconstruction, mu, logvar = model(data)
-        loss = model.loss_function(data, reconstruction, mu, logvar)
-        running_loss += loss.item()
+        beta = beta_schedule(total_iterations * epoch + i, total_iterations)
+        recons_loss, kld_loss = model.loss_function(data, reconstruction, mu, logvar, beta)
+        loss = recons_loss + beta * kld_loss
+        running_loss += (recons_loss.item(), kld_loss.item())
         loss.backward()
         optimizer.step()
-    train_loss = running_loss/len(dataloader.dataset)
+    train_loss = [loss/len(dataloader.dataset) for loss in running_loss]
     return train_loss
 
 #%%
-def train(model, optimizer, train_loader, epochs, checkpoint_filepath):
-    train_loss = []
+def train(model, optimizer, train_loader, epochs, checkpoint_filepath, resume_training, beta_anneal_schedule=lambda epoch: 0.25):
+    
+    if resume_training:
+        checkpoint = torch.load(checkpoint_filepath)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch']
+        train_loss = checkpoint['loss']
+        print(f"Loaded from checkpoint file {checkpoint_filepath}, train loss: {train_loss[-1]:.4f}")
+    else: 
+        start_epoch = 0
+        train_loss = []
 
-    for epoch in range(epochs):
-        print(f"\nEpoch {epoch + 1}/{epochs}")
-        
-        train_epoch_loss = fit(model, train_loader)
-        print(f"\nTrain Loss: {train_epoch_loss:.4f}")
+    end_epoch = start_epoch + epochs
+
+    for epoch in range(start_epoch, end_epoch):
+        print(f"\nEpoch {epoch + 1}/{end_epoch}") 
+        train_epoch_loss = fit(model, train_loader, epoch, beta_schedule)
+        print(f"\nReconstruction Loss: {train_epoch_loss[0]:.4f}")
 
         torch.save({
             'epoch' : epoch,
             'model_state_dict' : model.state_dict(),
             'optimizer_state_dict' : optimizer.state_dict(),
-            'loss' : train_epoch_loss
+            'loss' : train_loss
             }, checkpoint_filepath)
 
         train_loss.append(train_epoch_loss)
 
-if resume_training:
-    checkpoint = torch.load(checkpoint_filepath)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
-    loss = checkpoint['loss']
-
-    print("Loaded from checkpoint file {checkpoint_filepath}, current loss: {loss}")
-
-train(model, optimizer, train_loader, epochs, checkpoint_filepath)
-
-# %%
+beta_schedule = lambda iteration, total_iterations: beta_anneal(iteration, total_iterations, start_beta=0.0, end_beta=1.0, burn_in = 0.75, cycles_per_epoch = 1.5)
+train(model, optimizer, train_loader, epochs, checkpoint_filepath, resume_training, beta_schedule)
