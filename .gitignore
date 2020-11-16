@@ -1,1 +1,7 @@
 .vscode
+weights.pt
+.ipynb_checkpoints/
+.DS_Store
+.mypy_cache
+.vscode/
+__pycache__/
