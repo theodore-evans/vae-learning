@@ -14,10 +14,10 @@ class VAE(nn.Module):
 
         for h_dim in hidden_dims:
             modules.append(nn.Linear(input_dim, h_dim))
+            modules.append(nn.ReLU())
             input_dim = h_dim
         
         modules.append(nn.Linear(hidden_dims[-1], 2 * z_dim))
-        modules.append(nn.ReLU())
         self.encoder = nn.Sequential(*modules)
 
         modules = []
@@ -25,10 +25,10 @@ class VAE(nn.Module):
         input_dim = z_dim
         for h_dim in hidden_dims[::-1]:
             modules.append(nn.Linear(input_dim, h_dim))
+            modules.append(nn.ReLU())
             input_dim = h_dim
 
         modules.append(nn.Linear(hidden_dims[0], self.data_dim))
-
         modules.append(nn.Sigmoid())
         self.decoder = nn.Sequential(*modules)
 
