@@ -1,5 +1,12 @@
 import torch
 import torch.optim as optim
+import argparse
+import matplotlib
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import torchvision.transforms as transforms
+from vae import VAE
+
 from tqdm import tqdm
 import numpy as np
 
